@@ -69,6 +69,39 @@ class RegularizedLogisticRegression:
         Y : np.ndarray
             A 1D Numpy array containing the corresponding labels for each example.
         """
+        CONV_THRESHOLD = np.pow(10.0, -4)
+        b = self.batch_size
+        alpha = self.learningRate
+        converged = False 
+        num_epochs = 0
+        n = len(X)
+        L_o = float('inf')
+        while converged == False: 
+            num_epochs += 1 
+            indices = np.arange(X.shape[0])
+            np.random.shuffle(indices)
+            #I could technically let x = x[indecies] but want to make a new variable just to ensure I am changing locally even though I know it is locally changed
+            x_shuffled = X[indices]
+            y_shuffled = Y[indices]
+            for i in range(np.ceil(n/b) - 1): 
+                X_prime = x_shuffled[i*b:(i+1)*b]
+                Y_prime = y_shuffled[i*b:(i+1)*b]
+                n_prime = len(X_prime)
+                gradient_Lw = np.zeros(n)
+
+
+                for (x,y) in zip(X_prime, Y_prime): 
+                    gradient_Lw += (sigmoid_function(np.dot(self.weights, x)) - y) * x
+                self.weights -= (alpha/n_prime * (gradient_Lw) + alpha * 2 * (self.lmbda))
+
+            h_w_x = sigmoid_function(np.dot(self.weights, X)) 
+            L_xy = -1/n * np.sum(y * np.log(h_w_x) + (1 - y) * np.log(1 - (h_w_x)))
+            if np.abs(L_xy - L_o) < CONV_THRESHOLD: 
+                converged = True
+            else: 
+                L_o = L_xy
+            
+        
         # TODO: Add your solution code here.
         pass
 
@@ -87,6 +120,15 @@ class RegularizedLogisticRegression:
             A 1D Numpy array with a 0 or 1 for each row in X, representing the predicted class.
         """
         # TODO: Add your solution code here.
+        product = X @ self.weights # essentially taking a dot product of the a row in x with the weights (and then listing out all the data points)
+        probs =  sigmoid_function(product)
+        # we have that the probs here are the probabilities of a classification being 1. So if prob is greater than 0.5 we classify as 1
+        predictions = np.zeros(len(probs))
+        for i in range(len(probs)): 
+            if probs[i] > 0.5: 
+                predictions[i] = 1 
+        return predictions
+
         pass
 
     def accuracy(self, X: np.ndarray, Y: np.ndarray) -> float:
@@ -106,6 +148,16 @@ class RegularizedLogisticRegression:
             A float number indicating accuracy (between 0 and 1).
         """
         # TODO: Add your solution code here.
+        predictions = self.predict(X)
+        correct = 0
+        incorrect = 0 
+        for i in range(len(predictions)): 
+            if predictions[i] == Y: 
+                correct += 1 
+            
+        return correct/len(predictions)
+
+
         pass
 
     def runTrainValSplit(
@@ -144,6 +196,18 @@ class RegularizedLogisticRegression:
         train_errors = []
         val_errors = []
         # TODO: train model and calculate train and validation errors here for each lambda
+        initial_lambda = self.lmbda
+        for l in lambda_list: 
+            self.lmda = l 
+
+            self.train(X_train, Y_train)
+            prediction_train = self.predict(X_train)
+            train_errors.append(1 - self.accuracy(prediction_train, Y_train))
+
+            prediction_val = self.predict(X_val)
+            train_errors.append(1 - self.accuracy(prediction_val, Y_val))
+        self.lmda = initial_lambda
+            
         pass
         return train_errors, val_errors
 
@@ -207,6 +271,7 @@ class RegularizedLogisticRegression:
         for lmbda in lambda_list:
             self.lmbda = lmbda
             # TODO: call _kFoldSplitIndices to split indices into k groups randomly
+            self._kFoldSplitIndices(X, k)
             # TODO: for each iteration i = 1...k, train the model using lmbda
             # on k-1 folds of data. Then test with the i-th fold.
             # TODO: calculate and record the cross validation error by averaging total errors
