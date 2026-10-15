@@ -69,6 +69,8 @@ class RegularizedLogisticRegression:
         Y : np.ndarray
             A 1D Numpy array containing the corresponding labels for each example.
         """
+        self.weights = np.zeros(X.shape[1])
+
         CONV_THRESHOLD = np.pow(10.0, -4)
         b = self.batch_size
         alpha = self.learningRate
@@ -83,12 +85,11 @@ class RegularizedLogisticRegression:
             #I could technically let x = x[indecies] but want to make a new variable just to ensure I am changing locally even though I know it is locally changed
             x_shuffled = X[indices]
             y_shuffled = Y[indices]
-            for i in range(np.ceil(n/b) - 1): 
+            for i in range(int(np.ceil(n/b) - 1)): 
                 X_prime = x_shuffled[i*b:(i+1)*b]
                 Y_prime = y_shuffled[i*b:(i+1)*b]
                 n_prime = len(X_prime)
                 gradient_Lw = np.zeros(n)
-
 
                 for (x,y) in zip(X_prime, Y_prime): 
                     gradient_Lw += (sigmoid_function(np.dot(self.weights, x)) - y) * x
@@ -157,7 +158,6 @@ class RegularizedLogisticRegression:
             
         return correct/len(predictions)
 
-
         pass
 
     def runTrainValSplit(
@@ -201,11 +201,8 @@ class RegularizedLogisticRegression:
             self.lmda = l 
 
             self.train(X_train, Y_train)
-            prediction_train = self.predict(X_train)
-            train_errors.append(1 - self.accuracy(prediction_train, Y_train))
-
-            prediction_val = self.predict(X_val)
-            train_errors.append(1 - self.accuracy(prediction_val, Y_val))
+            train_errors.append(1 - self.accuracy(X_train, Y_train))
+            val_errors.append(1 - self.accuracy(X_val, Y_val))
         self.lmda = initial_lambda
             
         pass
@@ -271,10 +268,26 @@ class RegularizedLogisticRegression:
         for lmbda in lambda_list:
             self.lmbda = lmbda
             # TODO: call _kFoldSplitIndices to split indices into k groups randomly
-            self._kFoldSplitIndices(X, k)
+            indices_split = self._kFoldSplitIndices(X, k)
             # TODO: for each iteration i = 1...k, train the model using lmbda
             # on k-1 folds of data. Then test with the i-th fold.
+            # 
+            total_error = 0
+            for i in range(k): 
+                validate_indices = indices_split[i]
+                train_indices =  np.concatenate(indices_split[:i] + indices_split[i+1:])
+                X_train = X[train_indices]
+                Y_train = Y[train_indices]
+                X_val = X[validate_indices]
+                Y_val = Y[validate_indices]
+                self.train(X_train, Y_train)
+
+                error = 1 - self.accuracy(X_val, Y_val)
+                total_error += error
+           
+            # 
             # TODO: calculate and record the cross validation error by averaging total errors
+            k_fold_errors.append(total_error/k)
             pass
         self.lmbda = initial_lmbda  # reset lambda value to what it was before calling
         return k_fold_errors
