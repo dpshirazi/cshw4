@@ -70,7 +70,7 @@ class RegularizedLogisticRegression:
             A 1D Numpy array containing the corresponding labels for each example.
         """
         self.weights = np.zeros(X.shape[1])
-        CONV_THRESHOLD = np.pow(10.0, -4)
+        CONV_THRESHOLD = 10 **(-4)
         b = self.batch_size
         alpha = self.learningRate
         converged = False 
@@ -95,8 +95,8 @@ class RegularizedLogisticRegression:
                 self.weights -= (alpha/n_prime * (gradient_Lw) + alpha * 2 * (self.lmbda) * self.weights)
 
             h_w_x = sigmoid_function(X @ self.weights) 
-            h_w_x[h_w_x == 0] = np.pow(10.0, -8) # I am doing this because I got an error saying that I tried calculating log(0) for the loss
-            h_w_x[h_w_x==1] = 1 - np.pow(10.0, -8)
+            h_w_x[h_w_x == 0] = 10 ** (-8) # I am doing this because I got an error saying that I tried calculating log(0) for the loss
+            h_w_x[h_w_x==1] = 1 - 10 ** (-8) 
             L_xy = -1/n * np.sum(Y * np.log(h_w_x) + (1 - Y) * np.log(1 - (h_w_x)))
             if np.abs(L_xy - L_o) < CONV_THRESHOLD: 
                 converged = True
