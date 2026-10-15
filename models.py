@@ -70,7 +70,6 @@ class RegularizedLogisticRegression:
             A 1D Numpy array containing the corresponding labels for each example.
         """
         self.weights = np.zeros(X.shape[1])
-
         CONV_THRESHOLD = np.pow(10.0, -4)
         b = self.batch_size
         alpha = self.learningRate
@@ -78,29 +77,32 @@ class RegularizedLogisticRegression:
         num_epochs = 0
         n = len(X)
         L_o = float('inf')
-        while converged == False: 
+        while converged == False and num_epochs < self.num_epochs: 
             num_epochs += 1 
             indices = np.arange(X.shape[0])
             np.random.shuffle(indices)
             #I could technically let x = x[indecies] but want to make a new variable just to ensure I am changing locally even though I know it is locally changed
             x_shuffled = X[indices]
             y_shuffled = Y[indices]
-            for i in range(int(np.ceil(n/b) - 1)): 
+            for i in range(int(np.ceil(n/b))): 
                 X_prime = x_shuffled[i*b:(i+1)*b]
                 Y_prime = y_shuffled[i*b:(i+1)*b]
                 n_prime = len(X_prime)
-                gradient_Lw = np.zeros(n)
+                gradient_Lw = np.zeros(X.shape[1])
 
                 for (x,y) in zip(X_prime, Y_prime): 
                     gradient_Lw += (sigmoid_function(np.dot(self.weights, x)) - y) * x
-                self.weights -= (alpha/n_prime * (gradient_Lw) + alpha * 2 * (self.lmbda))
+                self.weights -= (alpha/n_prime * (gradient_Lw) + alpha * 2 * (self.lmbda) * self.weights)
 
-            h_w_x = sigmoid_function(np.dot(self.weights, X)) 
-            L_xy = -1/n * np.sum(y * np.log(h_w_x) + (1 - y) * np.log(1 - (h_w_x)))
+            h_w_x = sigmoid_function(X @ self.weights) 
+            h_w_x[h_w_x == 0] = np.pow(10.0, -8) # I am doing this because I got an error saying that I tried calculating log(0) for the loss
+            h_w_x[h_w_x==1] = 1 - np.pow(10.0, -8)
+            L_xy = -1/n * np.sum(Y * np.log(h_w_x) + (1 - Y) * np.log(1 - (h_w_x)))
             if np.abs(L_xy - L_o) < CONV_THRESHOLD: 
                 converged = True
             else: 
                 L_o = L_xy
+            num_epochs += 1 # to not have an infinite loop
             
         
         # TODO: Add your solution code here.
@@ -153,7 +155,7 @@ class RegularizedLogisticRegression:
         correct = 0
         incorrect = 0 
         for i in range(len(predictions)): 
-            if predictions[i] == Y: 
+            if predictions[i] == Y[i]: 
                 correct += 1 
             
         return correct/len(predictions)
@@ -198,12 +200,12 @@ class RegularizedLogisticRegression:
         # TODO: train model and calculate train and validation errors here for each lambda
         initial_lambda = self.lmbda
         for l in lambda_list: 
-            self.lmda = l 
+            self.lmbda = l 
 
             self.train(X_train, Y_train)
             train_errors.append(1 - self.accuracy(X_train, Y_train))
             val_errors.append(1 - self.accuracy(X_val, Y_val))
-        self.lmda = initial_lambda
+        self.lmbda = initial_lambda
             
         pass
         return train_errors, val_errors

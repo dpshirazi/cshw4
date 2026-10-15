@@ -43,10 +43,10 @@ def main():
     # TODO: Once runTrainValSplit and runKFold are implemented in models.py, uncomment
     # the following lines of code to plot different lambda values against training/validation errors.
 
-    # lambda_list = [1000, 100, 10, 1, 0.1, 0.01, 0.001]
-    # train_errors, val_errors = RR.runTrainValSplit(lambda_list, X_train, Y_train, X_val, Y_val)
-    # k_fold_errors = RR.runKFold(lambda_list, X_train_val, Y_train_val, 3)
-    # RR.plotError(lambda_list, train_errors, val_errors, k_fold_errors)
+    lambda_list = [1000, 100, 10, 1, 0.1, 0.01, 0.001]
+    train_errors, val_errors = RR.runTrainValSplit(lambda_list, X_train, Y_train, X_val, Y_val)
+    k_fold_errors = RR.runKFold(lambda_list, X_train_val, Y_train_val, 3)
+    RR.plotError(lambda_list, train_errors, val_errors, k_fold_errors)
 
     # TODO: Once you've determined & set the optimal lambda value from the plots, uncomment
     # the following line to see the test accuracy.
